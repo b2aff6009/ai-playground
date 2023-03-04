@@ -8,8 +8,9 @@ def relu(x):
   return 0 if x < 0 else x
 
 class Net:
-	def __init__(self):
+	def __init__(self, costFunc):
 		self.layers = []
+		self.costFunc = costFunc
 		pass
 
 	def addLayer(self, newLayer):
@@ -23,6 +24,17 @@ class Net:
 
 	def __repr__(self):
 		return str(self.layers)
+	
+	def applyCorrection(self, corrections: list):
+		for [layer, correction] in zip(self.layers[1:], corrections):
+			layer.applyCorrection(correction)
+	
+	def getCost(self, targetValues):
+		result = []
+		costs = self.costFunc(self.layers[-1])
+		for i, j in zip(targetValues, costs):
+			result.append((i -j)**2)
+		return result
 
 class Layer:
 	def __init__(self, bias, activationFunc, nr = 0.0 , y_offset = 0):
@@ -35,8 +47,23 @@ class Layer:
 	def createNode(self, nodes, weights):
 		self.nodes.append(Node(nodes, weights, self.bias, self.activationFunc, self.x, len(self.nodes) + self.y_offset))
 
+	def applyCorrection(self, corrections: list):
+		for [node, correction] in zip(self.nodes, corrections):
+			node.applyCorrection(correction)
+
+
+	def getValues(self):
+		values = [node.get() for node in self.nodes]
+		return values
+
 	def __repr__(self):
 		return str(self.nodes)
+	
+	def getAllWeights(self):
+		weights = list()
+		for node in self.nodes:
+			weights.extend(node.weights)
+		return weights
 	
 class InputLayer(Layer):
 	def __init__(self, values):
@@ -47,6 +74,9 @@ class InputLayer(Layer):
 
 	def createNode(self, value):
 		self.nodes.append(InputNode(value, self.x, self.y_offset + len(self.nodes)))
+
+	def getAllWeights(self):
+		return []
 
 
 class Node:
@@ -62,6 +92,11 @@ class Node:
 	
 	def __repr__(self):
 		return f"{self.get():.2f}"
+
+	def applyCorrection(self, corrections: list):
+		self.executed = False
+		for [i, correction] in enumerate(corrections):
+			self.weights[i] = correction
 
 	def get(self):
 		if self.executed:
