@@ -5,17 +5,33 @@ import random
 
 	
 scale = 3.5
-inputs = [
-	{"values": [1, 2, 3, 5, 6, 7], "target": [1]},
-	{"values": [2, 1, 3, 5, 6, 7, 8, 9], "target": [0]},
-	{"values": [2, 2, 3, 5, 1, 5, 3, 2, 5], "target": [0]}
-]
+
+min_start = 0
+max_start = 10
+def createInputs(lenght : int, count : int):
+	inputs = list()
+	for i in range(0, count):
+		entry = dict()
+		start = random.randint(min_start, max_start)
+		values = list(range(start, start + lenght))
+		target = 1
+		if random.random() < 0:
+			random.shuffle(values)
+			target = 0
+		entry["values"] = values
+		entry["target"] = target
+		inputs.append(entry)
+	return inputs
+
+inputs = createInputs(5, 1)
+
+
 
 def costFunction(outputLayer : nn.Layer):
 	return outputLayer.getValues()
 
 
-def isTrivialSorted(array : list, target : list):
+def isSortedStaticNet(array : list, target : list):
 
 	sortedNet = nn.Net(costFunction)
 	#create input layer, every node will just have the input value as value
@@ -51,7 +67,7 @@ def isTrivialSorted(array : list, target : list):
 	print(sortedNet.getCost(target))
 	return sortedNet
 
-def isDenseSorted(array : list, target : list):
+def isSortedDynamicNet(array : list, target : list):
 
 	sortedNet = nn.Net(costFunction)
 	#create input layer, every node will just have the input value as value
@@ -92,7 +108,7 @@ def isDenseSorted(array : list, target : list):
 
 if __name__ == '__main__':
 	for [i, input] in enumerate(inputs):
-		net = isDenseSorted(input["values"], input["target"])
+		net = isSortedDynamicNet(input["values"], input["target"])
 		print(net)
 		# net = isTrivialSorted(input["values"], input["target"])
 		svg.drawNet("sort_net_{}_1.svg".format(i), net, scale)
