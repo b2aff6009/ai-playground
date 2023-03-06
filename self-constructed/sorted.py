@@ -23,9 +23,7 @@ def createInputs(lenght : int, count : int):
 		inputs.append(entry)
 	return inputs
 
-inputs = createInputs(5, 1)
-
-
+inputs = createInputs(6, 1)
 
 def costFunction(outputLayer : nn.Layer):
 	return outputLayer.getValues()
@@ -50,7 +48,7 @@ def isSortedStaticNet(array : list, target : list):
 	nextLayer = nn.Layer(-0.5, nn.sigmoid, sortedNet.layerCnt(), 0.5)
 	for i in range(0, len(array)-1):
 		nodes = [sortedNet.prevLayer().nodes[i]]
-		nextLayer.createNode(nodes, [100])
+		nextLayer.createNode(nodes, [10])
 	sortedNet.addLayer(nextLayer)
 
 	#thirdLayer will just sum up all values from the second layer
@@ -111,7 +109,9 @@ if __name__ == '__main__':
 		net = isSortedDynamicNet(input["values"], input["target"])
 		print(net)
 		# net = isTrivialSorted(input["values"], input["target"])
-		svg.drawNet("sort_net_{}_1.svg".format(i), net, scale)
+		output = svg.Output(net, scale, "sort_net.svg".format(i))
+		output.addAnimationStep()
+		# svg.drawNet("sort_net_{}_1.svg".format(i), net, scale)
 
 		correction = list()
 		for layer in net.layers:
@@ -127,5 +127,7 @@ if __name__ == '__main__':
 
 
 		net.applyCorrection(correction)
+		output.addAnimationStep()
 		print(net)
-		svg.drawNet("sort_net_{}_2.svg".format(i), net, scale)
+		output.finish()
+		# svg.drawNet("sort_net_{}_2.svg".format(i), net, scale)
