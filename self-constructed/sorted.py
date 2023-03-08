@@ -22,7 +22,7 @@ def createInputs(lenght : int, count : int) -> list():
 		inputs.append(entry)
 	return inputs
 
-inputs = createInputs(2, 1)
+inputs = createInputs(5, 1)
 
 def costFunction(outputLayer : nn.Layer):
 	return outputLayer.getValues()
@@ -46,8 +46,8 @@ def RandomNet(inputs : list[dict]):
 	net.setInput(inputs[0]["values"])
 
 	net.addLayer(nn.DenseLayer(net, inputLen-1, 0.5, nn.relu, net.layerCnt(), 0.5))
-	# net.addLayer(nn.DenseLayer(net, inputLen-1, -0.5, nn.sigmoid, net.layerCnt(), 0.5))
-	# net.addLayer(nn.DenseLayer(net, 1, 0.0, nn.relu, net.layerCnt(), -0.5 + len(input)/2))
+	net.addLayer(nn.DenseLayer(net, inputLen-1, -0.5, nn.sigmoid, net.layerCnt(), 0.5))
+	net.addLayer(nn.DenseLayer(net, 1, 0.0, nn.relu, net.layerCnt(), -0.5 + inputLen/2))
 
 	return net
 
@@ -84,4 +84,4 @@ def Execute( netType : int, inputs : list):
 
 
 if __name__ == '__main__':
-	Execute(0, inputs)
+	Execute(1, inputs)
