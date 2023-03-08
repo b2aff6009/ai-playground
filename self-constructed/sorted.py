@@ -2,20 +2,19 @@
 import lib_nn as nn
 import lib_draw as svg
 import random
-
 	
 scale = 3.5
 
 min_start = 0
 max_start = 10
-def createInputs(lenght : int, count : int):
+def createInputs(lenght : int, count : int) -> list():
 	inputs = list()
 	for i in range(0, count):
 		entry = dict()
 		start = random.randint(min_start, max_start)
 		values = list(range(start, start + lenght))
 		target = 1
-		if random.random() < 0:
+		if random.random() < 0.5:
 			random.shuffle(values)
 			target = 0
 		entry["values"] = values
@@ -23,95 +22,41 @@ def createInputs(lenght : int, count : int):
 		inputs.append(entry)
 	return inputs
 
-inputs = createInputs(6, 1)
+inputs = createInputs(2, 1)
 
 def costFunction(outputLayer : nn.Layer):
 	return outputLayer.getValues()
 
+def ManualNet(inputs : list[dict]):
+	inputLen = len(inputs[0]["values"])
+	net = nn.Net(inputLen, costFunction)
+	net.setInput(inputs[0]["values"])
 
-def isSortedStaticNet(array : list, target : list):
+	net.addLayer(nn.NeightboursLayer(net, inputLen-1, 0.5, nn.relu, net.layerCnt(), 0.5, [-1, 1])) #get diff
+	net.addLayer(nn.NeightboursLayer(net, inputLen-1, -0.5, nn.sigmoid, net.layerCnt(), 0.5, [10])) # normalize
+	net.addLayer(nn.DenseLayer(net, 1, 0.0, nn.relu, net.layerCnt(), -0.5 + inputLen/2, [1]*(inputLen-1))) # sum up
+	net.addLayer(nn.NeightboursLayer(net, 1, 0.0, nn.relu, net.layerCnt(), -0.5 + inputLen/2, [1/(inputLen-1)])) # normalize 
 
-	sortedNet = nn.Net(costFunction)
-	#create input layer, every node will just have the input value as value
-	startLayer = nn.InputLayer(array)
-	sortedNet.addLayer(startLayer)
+	return net
 
+def RandomNet(inputs : list[dict]):
+	inputLen = len(inputs[0]["values"])
 
-	#create the first operation layer, which will check if the "second node" is higer than the "first node"
-	nextLayer = nn.Layer(0.5, nn.relu, sortedNet.layerCnt(), 0.5)
-	for i in range(0, len(array)-1):
-		nodes = [sortedNet.prevLayer().nodes[i], sortedNet.prevLayer().nodes[i+1]]
-		nextLayer.createNode(nodes, [-1, 1])
-	sortedNet.addLayer(nextLayer)
+	net = nn.Net(inputLen, costFunction)
+	net.setInput(inputs[0]["values"])
 
-	#second hidden layer will normalize the result of first hidden layer
-	nextLayer = nn.Layer(-0.5, nn.sigmoid, sortedNet.layerCnt(), 0.5)
-	for i in range(0, len(array)-1):
-		nodes = [sortedNet.prevLayer().nodes[i]]
-		nextLayer.createNode(nodes, [10])
-	sortedNet.addLayer(nextLayer)
+	net.addLayer(nn.DenseLayer(net, inputLen-1, 0.5, nn.relu, net.layerCnt(), 0.5))
+	# net.addLayer(nn.DenseLayer(net, inputLen-1, -0.5, nn.sigmoid, net.layerCnt(), 0.5))
+	# net.addLayer(nn.DenseLayer(net, 1, 0.0, nn.relu, net.layerCnt(), -0.5 + len(input)/2))
 
-	#thirdLayer will just sum up all values from the second layer
-	nextLayer = nn.Layer(0.0, nn.relu, sortedNet.layerCnt(), -0.5 + len(array)/2)
-	nextLayer.createNode(sortedNet.prevLayer().nodes, [1]*len(array))
-	sortedNet.addLayer(nextLayer)
+	return net
 
-	#output layer will normalize the sum from thirdLayer
-	nextLayer= nn.Layer(-0.0, nn.relu, sortedNet.layerCnt(), -0.5 + len(array)/2)
-	nextLayer.createNode(sortedNet.prevLayer().nodes, [1/(len(array)-1)])
-	sortedNet.addLayer(nextLayer)
-
-	print(sortedNet)
-	print(sortedNet.getCost(target))
-	return sortedNet
-
-def isSortedDynamicNet(array : list, target : list):
-
-	sortedNet = nn.Net(costFunction)
-	#create input layer, every node will just have the input value as value
-	startLayer = nn.InputLayer(array)
-	sortedNet.addLayer(startLayer)
-
-
-	#create the first operation layer, which will check if the "second node" is higer than the "first node"
-	nextLayer = nn.Layer(0.5, nn.relu, sortedNet.layerCnt(), 0.5)
-	for i in range(0, len(array)-1):
-		cnt = len(sortedNet.prevLayer().nodes)
-		nextLayer.createNode(sortedNet.prevLayer().nodes, [(random.random()-0.5)*2]*cnt)
-	sortedNet.addLayer(nextLayer)
-
-	#second hidden layer will normalize the result of first hidden layer
-	nextLayer = nn.Layer(-0.5, nn.sigmoid, sortedNet.layerCnt(), 0.5)
-	cnt = len(sortedNet.prevLayer().nodes)
-	for i in range(0, len(array)-1):
-		nextLayer.createNode(sortedNet.prevLayer().nodes, [(random.random()-0.5)*2]*cnt)
-	sortedNet.addLayer(nextLayer)
-
-	#thirdLayer will just sum up all values from the second layer
-	nextLayer = nn.Layer(0.0, nn.relu, sortedNet.layerCnt(), -0.5 + len(array)/2)
-	cnt = len(sortedNet.prevLayer().nodes)
-	nextLayer.createNode(sortedNet.prevLayer().nodes, [(random.random()-0.5)*2]*cnt)
-	sortedNet.addLayer(nextLayer)
-
-	#output layer will normalize the sum from thirdLayer
-	nextLayer= nn.Layer(-0.0, nn.relu, sortedNet.layerCnt(), -0.5 + len(array)/2)
-	cnt = len(sortedNet.prevLayer().nodes)
-	nextLayer.createNode(sortedNet.prevLayer().nodes, [1/(len(array)-1)]*cnt)
-	sortedNet.addLayer(nextLayer)
-
-	# print(sortedNet)
-	# print(sortedNet.getCost(target))
-	return sortedNet
-
-
-if __name__ == '__main__':
-	for [i, input] in enumerate(inputs):
-		net = isSortedDynamicNet(input["values"], input["target"])
+def Execute( netType : int, inputs : list):
+	if netType == 1:
+		net = RandomNet(inputs)
 		print(net)
-		# net = isTrivialSorted(input["values"], input["target"])
-		output = svg.Output(net, scale, "sort_net.svg".format(i))
+		output = svg.Output(net, scale, "sort_net.svg")
 		output.addAnimationStep()
-		# svg.drawNet("sort_net_{}_1.svg".format(i), net, scale)
 
 		correction = list()
 		for layer in net.layers:
@@ -125,9 +70,18 @@ if __name__ == '__main__':
 				layer_correction.append(node_correction)
 			correction.append(layer_correction)
 
-
 		net.applyCorrection(correction)
 		output.addAnimationStep()
 		print(net)
 		output.finish()
-		# svg.drawNet("sort_net_{}_2.svg".format(i), net, scale)
+
+	elif netType == 0:
+		net = ManualNet(inputs)
+		print(net)
+		output = svg.Output(net, scale, "sort_net.svg")
+		output.addAnimationStep()
+		output.finish()
+
+
+if __name__ == '__main__':
+	Execute(0, inputs)
